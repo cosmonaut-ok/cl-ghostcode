@@ -37,7 +37,7 @@
 	  expand-ghosts-to-macros
 	  expand-ghosts-to-flet
 	  expand-ghosts-to-labels
-	  expand-ghosts-to-macros))
+	  expand-ghosts-to-macrolet))
 
 ;;;; classes
 (defclass ghostvar ()
