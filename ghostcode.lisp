@@ -16,7 +16,8 @@
 ;; along with this software; see the file COPYING.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(defpackage :ghostcode
+(defpackage :cl-ghostcode
+  (:nicknames :ghostcode :g-c)
   (:use :cl))
 
 (in-package :cl-ghostcode)

@@ -5,7 +5,7 @@
 
 (in-package :ghostcode-system)
 
-(defsystem :ghostcode
+(defsystem :cl-ghostcode
   :name "GHOSTCODE"
   :author "Alexander aka 'CosmonauT' Vynnyk <cosmonaut.ok@zoho.com>"
   :version "0.1"
