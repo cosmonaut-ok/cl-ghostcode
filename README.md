@@ -2,7 +2,7 @@ Very tiny library for adding functions, macros and variables as data objects (gh
 functions, macros or variables. Ex. ghostfunction can be expanded to ordinary function, lambda function, macro, or/and
 flet/labels/macrolet region at many different places or your program.
 
-ghostcode could make your code much mode dinamic than before!
+ghostcode could make your code much more dynamic than before!
 
 
 List of functions and macros:
@@ -56,7 +56,9 @@ CL-USER> (macroexpand '(expand-ghosts-to-flet (list (gethash "func-1" *funcs-has
       (FORMAT NIL "Exit from func-1: ~a" (FUNC-1 10)))
 T
 
-CL-USER> (eval `(mapcar ,(expand-ghost-to-lambda (gethash "func-1" *funcs-hash*)) '(1 2 3 4 5))) ;; expand ghost object, then eval ``mapcar''
+CL-USER> (eval 
+          `(mapcar ,(expand-ghost-to-lambda (gethash "func-1" *funcs-hash*))
+                   '(1 2 3 4 5))) ;; expand ghost object, then eval ``mapcar''
 1!!!
 2!!!
 3!!!
