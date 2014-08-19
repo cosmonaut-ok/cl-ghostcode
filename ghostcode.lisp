@@ -151,7 +151,7 @@
   `(labels ,(mapcar #'make-flet (eval ghostfuncs))
      ,@body))
 
-(defmacro expand-ghosts-to-macros (ghostfuncs &body body)
+(defmacro expand-ghosts-to-macrolet (ghostfuncs &body body)
   `(macrolet ,(mapcar #'make-flet (eval ghostfuncs))
      ,@body))
 
