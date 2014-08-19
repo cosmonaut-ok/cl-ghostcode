@@ -96,11 +96,6 @@
   `(let* ,(mapcar #'make-let (eval ghostvars))
      ,@body))
 
-
-
-;; expand-ghosts-to-let*
-(in-package :cl-ghostcode)
-
 (defmacro defun-ghost (name args &body body) ;; name args [package] body
   "Makes ghostfun - ghost function"
   `(check-type name symbol)
