@@ -1,6 +1,6 @@
 ;; Copyright (C) 2014 Alexander aka CosmonauT Vynnyk
 ;;
-;;  This file is common lisp ghostcode library.
+;;  This file is part of common lisp ghostcode library.
 ;;
 ;; ghostcode is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,131 +22,202 @@
 
 (in-package :cl-ghostcode)
 
-(export '(defvar-ghost
-	  expand-ghost-to-var
-	  expand-ghost-to-parameter
-	  expand-ghosts-to-vars
-	  expand-ghosts-to-parameters
-	  expand-ghosts-to-let
-	  expand-ghosts-to-let*
-	  defun-ghost
-	  expand-ghost-to-func
-	  expand-ghost-to-macro
-	  expand-ghost-to-lambda
-	  expand-ghosts-to-funcs
-	  expand-ghosts-to-macros
-	  expand-ghosts-to-flet
-	  expand-ghosts-to-labels
-	  expand-ghosts-to-macrolet))
+(export '(g-name
+					g-args
+					g-body
+					g-package
+					g-documentation
+					define-ghost
+					defvar-ghost
+					defun-ghost
+					ghost-as-var
+					ghost-as-parameter
+					ghost-as-constant
+					ghosts-as-vars
+					ghosts-as-parameters
+					ghosts-as-constants
+					ghost-as-let
+					ghost-as-let*
+					ghost-as-macrolet
+					ghosts-as-let
+					ghosts-as-let*
+					ghosts-as-macrolet ;; ??? does it exists
+					ghost-as-function
+					ghost-as-macro
+					ghost-as-lambda
+					ghosts-as-functions
+					ghosts-as-macros
+					;; ghosts-as-lambdas shouldn't be useful
+					ghosts-as-flet
+					ghosts-as-labels
+					ghosts-as-macrolet))
 
-;;;; classes
-(defclass ghostvar ()
+;;;; classes/types/definitions etc
+
+(defclass ghost ()
   ((name :initarg :name :accessor g-name)
-   (value :initarg :value :accessor g-value)
+	 (args :initarg :args :accessor g-args)
+   (body :initarg :body :accessor g-body)
    (package :initarg :package :accessor g-package)
    (documentation :initarg :documentation :accessor g-documentation)))
 
-(defclass ghostfunc ()
-  ((name :initarg :name :accessor g-name)
-   (package :initarg :package :accessor g-package)
-   (args :initarg :args :accessor g-args)
-   (body :initarg :body :accessor g-body)))
+(defun ghost-list-p (list)
+	"Need as test function for data type ``ghost''"
+	(cond ((null list) t)
+				((equal (symbol-name (class-name (class-of (car list)))) "GHOST")
+				 (ghost-list-p (cdr list)))
+				(t nil)))
 
-;;;; ghostvar
+(deftype ghostlist ()
+	'(and string (satisfies ghost-list-p)))
 
-(defmacro defvar-ghost (var &optional val doc)
-  "Makes ghostvar - ghost variable"
-  `(check-type ,var symbol)
-  `(check-type ,doc (or null string))
-  `(make-instance 'ghostvar
-		  :name (symbol-name ',var)
-		  :value ,val
-		  :package (symbol-package ',var)
-		  :documentation ,doc))
+(defun define-ghost (name &key args body doc)
+	"Low-level function for ghost objects definition.
+Useful it for automatic ghost objects generation"
+	(check-type name symbol)
+	(check-type args (or null list))
+	(check-type doc (or null string))
+	(make-instance 'ghost
+								 :name (symbol-name name)
+								 :args args :body body :documentation doc
+								 :package (symbol-package name)))
 
-(defmethod expand-ghost-to-var ((var ghostvar))
-  (let ((*package* (g-package var)))
-    (eval `(defvar ,(intern (g-name var)) ,(g-value var) ,(g-documentation var)))))
+(defmacro defvar-ghost (name &optional val doc)
+	"Just macro for better usability. In fact, it doesn`t create
+some special objects, except standard ghost objects"
+	`(define-ghost ,name :body ,val :doc ,doc))
 
-(defmethod expand-ghost-to-parameter ((var ghostvar))
-  (let ((*package* (g-package var)))
-    (eval `(defparameter ,(intern (g-name var)) ,(g-value var) ,(g-documentation var)))))
+(defmacro defun-ghost (name args &body body)
+	"Just macro for better usability. In fact, it doesn`t create
+some special objects, except standard ghost objects"
+	`(define-ghost ,name :args ,args :body ,body))
 
-(defmacro expand-ghosts-to-vars (ghostvars)
-  `(check-type ghostvars list)
-  `(dolist (var ,ghostvars)
+;;;; variables/constants part
+
+(defmethod ghost-as-var ((obj ghost))
+	"Expand ghost object to regular global variable"
+  (let ((*package* (g-package obj)))
+    (eval `(defvar ,(intern (g-name obj))
+						 ,(g-body obj) ,(g-documentation obj)))))
+
+(defmethod ghost-as-parameter ((obj ghost))
+	"Expand ghost object to regular global variable
+ using ``defparameter'' instead of ``defvar''"
+  (let ((*package* (g-package obj)))
+    (eval `(defparameter ,(intern (g-name obj))
+						 ,(g-body obj) ,(g-documentation obj)))))
+
+(defmethod ghost-as-constant ((obj ghost))
+	"Expand ghost object to regular global constant"
+  (let ((*package* (g-package obj)))
+    (eval `(defconstant ,(intern (g-name obj))
+						 ,(g-body obj) ,(g-documentation obj)))))
+
+(defmacro ghosts-as-vars (ghosts)
+	"Macro for mass ghost objects expansion to variables"
+  `(check-type ,ghosts ghostlist)
+  `(dolist (var ',(eval (cons 'list ghosts)))
      (let ((*package* (g-package var)))
-       (eval `(defvar ,(intern (g-name var)) ,(g-value var) ,(g-documentation var))))))
+       (eval `(defvar ,(intern (g-name var))
+								,(g-body var) ,(g-documentation var))))))
 
-(defmacro expand-ghosts-to-parameters (ghostvars)
-  `(check-type ghostvars list)
-  `(dolist (var ,ghostvars)
+(defmacro ghosts-as-parameters (ghosts)
+	"Macro for mass ghost objects expansion to variables using ``defparameter''"
+  `(check-type ,ghosts ghostlist)
+  `(dolist (var ',(eval (cons 'list ghosts)))
      (let ((*package* (g-package var)))
-       (eval `(defparameter ,(intern (g-name var)) ,(g-value var) ,(g-documentation var))))))
+       (eval `(defparameter ,(intern (g-name var))
+								,(g-body var) ,(g-documentation var))))))
 
-(defmethod make-let ((ghostvar ghostvar))
-  (eval `(let ((*package* ,(g-package ghostvar)))
-	   '(,(intern (g-name ghostvar)) ,(g-value ghostvar)))))
+(defmacro ghosts-as-constants (ghosts)
+	"Macro for mass ghost objects expansion to constants"
+  `(check-type ,ghosts ghostlist)
+  `(dolist (var ',(eval (cons 'list ghosts)))
+     (let ((*package* (g-package var)))
+       (eval `(defconstant ,(intern (g-name var))
+								,(g-body var) ,(g-documentation var))))))
 
-(defmacro expand-ghosts-to-let (ghostvars &body body)
-  `(let ,(mapcar #'make-let (eval ghostvars))
-     ,@body))
+(defmethod make-let ((obj ghost))
+	"Make component for let/let* environment from ghost object"
+  (eval `(let ((*package* ,(g-package obj)))
+					 '(,(intern (g-name obj)) ,(g-body obj)))))
 
-(defmacro expand-ghosts-to-let* (ghostvars &body body)
-  `(let* ,(mapcar #'make-let (eval ghostvars))
-     ,@body))
+(defmethod ghost-as-let ((obj ghost) body)
+	"Expand ghost object to ``let'' environment and put body there"
+	(eval `(let (,(make-let obj)) ,body)))
 
-(defmacro defun-ghost (name args &body body) ;; name args [package] body
-  "Makes ghostfun - ghost function"
-  `(check-type name symbol)
-  `(check-type args (or null list))
-  `(make-instance 'ghostfunc
-		  :name ,(symbol-name name)
-		  :args ',args
-		  :body ',body
-		  :package ,(symbol-package name)))
+(defmethod ghost-as-let* ((obj ghost) body)
+	"Expand ghost object to ``let*'' environment and put body there"
+	(eval `(let* (,(make-let obj)) ,body)))
 
-(defmethod expand-ghost-to-func ((func ghostfunc))
-  "Expand ghost to ordinary function"
+(defmethod ghost-as-macrolet ((obj ghost) body)
+	"Expand ghost object to ``macrolet'' environment and put body there"
+	(eval `(macrolet (,(make-let obj)) ,body)))
+
+(defmacro ghosts-as-let (ghosts &body body)
+	"Macro for multiple ghost objects expansion to single ``let'' environment"
+	;; usage: (ghosts-as-let (ghost1 ghost2 etc) (here) (is a body))
+	`(check-type ,ghosts ghostlist)
+	`(let ,(mapcar #'make-let (eval (cons 'list ghosts)))
+		 ,@body))
+
+(defmacro ghosts-as-let* (ghosts &body body)
+	"Macro for multiple ghost objects expansion to single ``let*'' environment"
+	;; usage: (ghosts-as-let (ghost1 ghost2 etc) (here) (is a body))
+	(check-type ghosts ghostlist)
+	`(let* ,(mapcar #'make-let (eval (cons 'list ghosts)))
+		 ,@body))
+
+;;;; functions/macros part
+
+(defmethod ghost-as-function ((func ghost))
+  "Expand ghost to ordinary global function"
   (let ((*package* (g-package func)))
     (eval `(defun ,(intern (g-name func)) ,(g-args func) ,@(g-body func)))))
 
-(defmethod expand-ghost-to-macro ((func ghostfunc))
-  "Expand ghost to ordinary macro"
+(defmethod ghost-as-macro ((func ghost))
+  "Expand ghost to ordinary global macro"
   (let ((*package* (g-package func)))
-    `(defmacro ,(intern (g-name func)) ,(g-args func) ,@(g-body func))))
+    (eval `(defmacro ,(intern (g-name func)) ,(g-args func) ,@(g-body func)))))
 
-(defmethod expand-ghost-to-lambda ((func ghostfunc))
+(defmethod ghost-as-lambda ((func ghost))
   "Expand ghost to lambda function"
   (let ((*package* (g-package func)))
-    ;; (eval `(defun ,(intern (g-name func)) ,(g-args func) ,@(g-body func)))))
     (eval `(lambda ,(g-args func) ,@(g-body func)))))
 
-(defmacro expand-ghosts-to-funcs (ghostfuncs)
-  `(check-type ,ghostfuncs list)
-  `(dolist (func ,ghostfuncs)
+(defmacro ghosts-as-functions (ghosts)
+	"Macro for mass ghost objects expansion to global functions"
+  `(check-type ,ghosts ghostlist)
+  `(dolist (func ',(eval (cons 'list ghosts)))
      (let ((*package* (g-package func)))
        (eval `(defun ,(intern (g-name func)) ,(g-args func) ,@(g-body func))))))
 
-(defmacro expand-ghosts-to-macros (ghostfuncs)
-  `(check-type ,ghostfuncs list)
-  `(dolist (func ,ghostfuncs)
+(defmacro ghosts-as-macros (ghosts)
+	"Macro for mass ghost objects expansion to global macros"
+  `(check-type ,ghosts ghostlist)
+	`(dolist (func ',(eval (cons 'list ghosts)))
      (let ((*package* (g-package func)))
        (eval `(defmacro ,(intern (g-name func)) ,(g-args func) ,@(g-body func))))))
 
-(defmethod make-flet ((ghostfunc ghostfunc))
-  (eval `(let ((*package* ,(g-package ghostfunc)))
-	   '(,(intern (g-name ghostfunc)) ,(g-args ghostfunc) ,@(g-body ghostfunc)))))
+(defmethod make-flet ((ghost ghost))
+  (eval `(let ((*package* ,(g-package ghost)))
+	   '(,(intern (g-name ghost)) ,(g-args ghost) ,@(g-body ghost)))))
 
-(defmacro expand-ghosts-to-flet (ghostfuncs &body body)
-  `(flet ,(mapcar #'make-flet (eval ghostfuncs))
+(defmacro ghosts-as-flet (ghosts &body body)
+	"Macro for multiple ghost objects expansion to single ``flet'' environment"
+	`(check-type ,ghosts ghostlist)
+  `(flet ,(mapcar #'make-flet (eval (cons 'list ghosts)))
      ,@body))
 
-(defmacro expand-ghosts-to-labels (ghostfuncs &body body)
-  `(labels ,(mapcar #'make-flet (eval ghostfuncs))
+(defmacro ghosts-as-labels (ghosts &body body)
+	"Macro for multiple ghost objects expansion to single ``labels'' environment"
+	`(check-type ,ghosts ghostlist)
+  `(labels ,(mapcar #'make-flet (eval (cons 'list ghosts)))
      ,@body))
 
-(defmacro expand-ghosts-to-macrolet (ghostfuncs &body body)
-  `(macrolet ,(mapcar #'make-flet (eval ghostfuncs))
+(defmacro ghosts-as-macrolet (ghosts &body body)
+	"Macro for multiple ghost objects expansion to single ``macrolet'' environment"
+	`(check-type ,ghosts ghostlist)
+  `(macrolet ,(mapcar #'make-flet (eval (cons 'list ghosts)))
      ,@body))
 
