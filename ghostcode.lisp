@@ -29,6 +29,7 @@
 	   :defvar-ghost
 	   :defun-ghost
 	   :clone-ghost
+		 :ghostlist
 	   :ghost-as-var
 	   :ghost-as-parameter
 	   :ghost-as-constant
@@ -60,6 +61,16 @@
    (body :initarg :body :accessor g-body)
    (package :initarg :package :accessor g-package)
    (documentation :initarg :documentation :accessor g-documentation)))
+
+(defun ghost-list-p (list)
+  "Need as test function for data type ``ghost''"
+  (cond ((null list) t)
+				((equal (symbol-name (class-name (class-of (car list)))) "GHOST")
+				 (ghost-list-p (cdr list)))
+				(t nil)))
+
+(deftype ghostlist ()
+  '(and list (satisfies ghost-list-p)))
 
 (defun define-ghost (name &key args body doc)
   "Low-level function for ghost objects definition.
