@@ -29,7 +29,7 @@
 	   :defvar-ghost
 	   :defun-ghost
 	   :clone-ghost
-		 :ghostlist
+	   :ghostlist
 	   :ghost-as-var
 	   :ghost-as-parameter
 	   :ghost-as-constant
@@ -65,9 +65,9 @@
 (defun ghost-list-p (list)
   "Need as test function for data type ``ghost''"
   (cond ((null list) t)
-				((equal (symbol-name (class-name (class-of (car list)))) "GHOST")
-				 (ghost-list-p (cdr list)))
-				(t nil)))
+	((equal (symbol-name (class-name (class-of (car list)))) "GHOST")
+	 (ghost-list-p (cdr list)))
+	(t nil)))
 
 (deftype ghostlist ()
   '(and list (satisfies ghost-list-p)))
