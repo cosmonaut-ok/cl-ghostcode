@@ -85,13 +85,13 @@ Useful it for automatic ghost objects generation"
 
 (defmacro defvar-ghost (name &optional val doc)
   "Just macro for better usability. In fact, it doesn`t create
-some special objects, except standard ghost objects"
-  `(define-ghost ,name :body ,val :doc ,doc))
+some special objects. Just standard ghost objects"
+  `(define-ghost ',name :body ',val :doc ',doc))
 
 (defmacro defun-ghost (name args &body body)
   "Just macro for better usability. In fact, it doesn`t create
-some special objects, except standard ghost objects"
-  `(define-ghost ,name :args ,args :body ,body))
+some special objects. Just standard ghost objects"
+  `(define-ghost ',name :args ',args :body ',body))
 
 (defmethod clone-ghost ((ghost ghost))
   "Clone ghost object"
