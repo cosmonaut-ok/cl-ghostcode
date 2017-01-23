@@ -93,6 +93,9 @@ some special objects. Just standard ghost objects"
 some special objects. Just standard ghost objects"
   `(define-ghost ',name :args ',args :body ',body))
 
+(defgeneric clone-ghost (ghost)
+  )
+
 (defmethod clone-ghost ((ghost ghost))
   "Clone ghost object"
   (define-ghost (g-name ghost)
@@ -101,11 +104,17 @@ some special objects. Just standard ghost objects"
       :doc (g-documentation ghost)))
 
 ;;;; variables/constants part
+(defgeneric ghost-as-var (obj)
+  )
+
 (defmethod ghost-as-var ((obj ghost))
   "Expand ghost object to regular global variable"
   (let ((*package* (g-package obj)))
     (eval `(defvar ,(intern (g-name obj))
 	     ,(g-body obj) ,(g-documentation obj)))))
+
+(defgeneric ghost-as-parameter (obj)
+  )
 
 (defmethod ghost-as-parameter ((obj ghost))
   "Expand ghost object to regular global variable
@@ -113,6 +122,9 @@ some special objects. Just standard ghost objects"
   (let ((*package* (g-package obj)))
     (eval `(defparameter ,(intern (g-name obj))
 	     ,(g-body obj) ,(g-documentation obj)))))
+
+(defgeneric ghost-as-constant (obj)
+  )
 
 (defmethod ghost-as-constant ((obj ghost))
   "Expand ghost object to regular global constant"
@@ -144,18 +156,30 @@ some special objects. Just standard ghost objects"
        (eval `(defconstant ,(intern (g-name var))
 		,(g-body var) ,(g-documentation var))))))
 
+(defgeneric make-let (obj)
+  )
+
 (defmethod make-let ((obj ghost))
   "Make component for let/let* environment from ghost object"
   (eval `(let ((*package* ,(g-package obj)))
 	   '(,(intern (g-name obj)) ,(g-body obj)))))
 
+(defgeneric ghost-as-let (obj)
+  )
+
 (defmethod ghost-as-let ((obj ghost) body)
   "Expand ghost object to ``let'' environment and put body there"
   (eval `(let (,(make-let obj)) ,body)))
 
+(defgeneric ghost-as-let* (obj)
+  )
+
 (defmethod ghost-as-let* ((obj ghost) body)
   "Expand ghost object to ``let*'' environment and put body there"
   (eval `(let* (,(make-let obj)) ,body)))
+
+(defgeneric ghost-as-macrolet (obj)
+  )
 
 (defmethod ghost-as-macrolet ((obj ghost) body)
   "Expand ghost object to ``macrolet'' environment and put body there"
@@ -177,15 +201,24 @@ some special objects. Just standard ghost objects"
 
 ;;;; functions/macros part
 
+(defgeneric ghost-as-function (func)
+  )
+
 (defmethod ghost-as-function ((func ghost))
   "Expand ghost to ordinary global function"
   (let ((*package* (g-package func)))
     (eval `(defun ,(intern (g-name func)) ,(g-args func) ,@(g-body func)))))
 
+(defgeneric ghost-as-macro (func)
+  )
+
 (defmethod ghost-as-macro ((func ghost))
   "Expand ghost to ordinary global macro"
   (let ((*package* (g-package func)))
     (eval `(defmacro ,(intern (g-name func)) ,(g-args func) ,@(g-body func)))))
+
+(defgeneric ghost-as-lambda (func)
+  )
 
 (defmethod ghost-as-lambda ((func ghost))
   "Expand ghost to lambda function"
@@ -205,6 +238,9 @@ some special objects. Just standard ghost objects"
   `(dolist (func ',(eval (cons 'list ghosts)))
      (let ((*package* (g-package func)))
        (eval `(defmacro ,(intern (g-name func)) ,(g-args func) ,@(g-body func))))))
+
+(defgeneric make-flet (ghost)
+  )
 
 (defmethod make-flet ((ghost ghost))
   (eval `(let ((*package* ,(g-package ghost)))
