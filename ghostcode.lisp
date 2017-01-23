@@ -164,21 +164,21 @@ some special objects. Just standard ghost objects"
   (eval `(let ((*package* ,(g-package obj)))
 	   '(,(intern (g-name obj)) ,(g-body obj)))))
 
-(defgeneric ghost-as-let (obj)
+(defgeneric ghost-as-let (obj body)
   )
 
 (defmethod ghost-as-let ((obj ghost) body)
   "Expand ghost object to ``let'' environment and put body there"
   (eval `(let (,(make-let obj)) ,body)))
 
-(defgeneric ghost-as-let* (obj)
+(defgeneric ghost-as-let* (obj body)
   )
 
 (defmethod ghost-as-let* ((obj ghost) body)
   "Expand ghost object to ``let*'' environment and put body there"
   (eval `(let* (,(make-let obj)) ,body)))
 
-(defgeneric ghost-as-macrolet (obj)
+(defgeneric ghost-as-macrolet (obj body)
   )
 
 (defmethod ghost-as-macrolet ((obj ghost) body)
